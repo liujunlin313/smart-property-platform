@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="RUN_LOG_DIR" source="APP_RUN_LOG_DIR"
+                    defaultValue="${user.dir}/logs/run-unknown"/>
+
+    <property name="CONSOLE_PATTERN"
+              value="%d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{32}) - %msg%n"/>
+    <property name="FILE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSSXXX} %-5level [%thread] %logger{64} trace=%X{traceId:--} - %msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder charset="UTF-8">
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="BACKEND_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${RUN_LOG_DIR}/backend.log</file>
+        <append>true</append>
+        <encoder charset="UTF-8">
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ACCESS_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${RUN_LOG_DIR}/access.log</file>
+        <append>true</append>
+        <encoder charset="UTF-8">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSSXXX} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FRONTEND_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${RUN_LOG_DIR}/frontend-client.log</file>
+        <append>true</append>
+        <encoder charset="UTF-8">
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="HTTP_CONSOLE" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="HTTP_ACCESS" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS_FILE"/>
+    </logger>
+    <logger name="FRONTEND_CLIENT" level="INFO" additivity="false">
+        <appender-ref ref="FRONTEND_FILE"/>
+    </logger>
+
+    <springProfile name="local | dev">
+        <appender name="NOTIFICATION_PREVIEW_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${RUN_LOG_DIR}/notification-preview.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${RUN_LOG_DIR}/notification-preview.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>14</maxHistory>
+            </rollingPolicy>
+            <encoder charset="UTF-8"><pattern>${FILE_PATTERN}</pattern></encoder>
+        </appender>
+        <logger name="NOTIFICATION_PREVIEW" level="INFO" additivity="false">
+            <appender-ref ref="NOTIFICATION_PREVIEW_FILE"/>
+        </logger>
+    </springProfile>
+
+    <logger name="org.mybatis" level="WARN"/>
+    <logger name="org.springframework.data.repository.config.RepositoryConfigurationDelegate" level="WARN"/>
+    <logger name="io.lettuce.core.protocol.ConnectionWatchdog" level="ERROR"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="BACKEND_FILE"/>
+    </root>
+</configuration>

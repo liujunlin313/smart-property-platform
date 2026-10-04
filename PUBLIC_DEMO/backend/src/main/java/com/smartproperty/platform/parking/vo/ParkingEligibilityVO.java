@@ -1,0 +1,1 @@
+package com.smartproperty.platform.parking.vo; import java.time.LocalDate; public record ParkingEligibilityVO(Long propertyUnitId,Long residenceId,String communityName,String buildingName,String unitName,String propertyNo,String source,String eligible,String reasonCode,String remark,LocalDate expectedEndDate,Integer activePermitCount) {}

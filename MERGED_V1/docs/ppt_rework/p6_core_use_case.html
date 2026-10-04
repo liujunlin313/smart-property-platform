@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, initial-scale=1">
+  <title>P6 Core Use Cases</title>
+  <style>
+    :root { --paper:#fcfbfa; --ink:#2d2928; --muted:#6c6562; --red:#a62d2a; --staff:#c27a2c; --resident:#167d70; --line:#e7d9d6; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--paper); }
+    body { font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",Arial,sans-serif; color:var(--ink); }
+    svg { display:block; width:1920px; height:1080px; }
+    .system-name { font-size:19px; font-weight:650; fill:#6c6562; letter-spacing:.07em; }
+    .area-name { font-size:21px; font-weight:700; fill:#6c6562; letter-spacing:.05em; }
+    .usecase { font-size:24px; font-weight:650; fill:#2d2928; }
+    .actor-cn { font-size:30px; font-weight:700; }
+    .actor-en { font-size:14px; font-weight:650; letter-spacing:.12em; }
+    .bridge { font-size:18px; fill:#6c6562; letter-spacing:.04em; }
+  </style>
+</head>
+<body>
+  <!--
+  THESIS: A role-coloured, three-band UML use-case field that makes participation and business hierarchy legible at a glance.
+  OWN-WORLD: Warm paper, slim university-red system boundary, charcoal type, with restrained red, ochre, and teal role accents.
+  STORY: Three actors participate in eight fixed use cases; shared services visibly carry two role associations and lead into Concept ER.
+  FIRST VIEWPORT: Actors frame one spacious boundary, whose shallow horizontal bands read as 基础管理, 核心物业业务, and 居民个人服务.
+  FORM: Classroom UML diagram; associations encode actors, regions encode business hierarchy, and use cases remain neutral.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+  -->
+  <svg viewBox="0 0 1920 1080" role="img" aria-label="三类角色通过不同颜色的关联线参与三个业务层次中的八项核心用例">
+    <!-- one UML system boundary, with light business-area bands -->
+    <rect x="450" y="90" width="1070" height="812" rx="22" fill="#fffdfc" stroke="#d4a8a2" stroke-width="2.4"/>
+    <rect x="480" y="170" width="1010" height="164" rx="14" fill="#faf3f2"/>
+    <rect x="480" y="354" width="1010" height="378" rx="14" fill="#fffdfc"/>
+    <rect x="480" y="752" width="1010" height="120" rx="14" fill="#f3f7f5"/>
+    <line x1="505" y1="344" x2="1465" y2="344" stroke="#eee2df" stroke-width="1.5"/>
+    <line x1="505" y1="742" x2="1465" y2="742" stroke="#e4ece8" stroke-width="1.5"/>
+    <text x="502" y="132" class="system-name">多小区智慧物业管理系统</text>
+    <text x="520" y="208" class="area-name">基础管理</text>
+    <text x="520" y="392" class="area-name">核心物业业务</text>
+    <text x="520" y="790" class="area-name">居民个人服务</text>
+
+    <!-- association routing: role main trunks and short branches, drawn before use cases -->
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8">
+      <!-- SYSTEM_ADMIN: upper entry and red trunk -->
+      <path d="M310 245 H590 V205" stroke="#a62d2a"/>
+      <path d="M590 205 V455" stroke="#a62d2a"/>
+      <path d="M590 270 H670" stroke="#a62d2a"/>
+      <path d="M590 205 H1230 V220" stroke="#a62d2a"/>
+      <path d="M590 395 H1030 V455 H1080" stroke="#a62d2a"/>
+
+      <!-- PROPERTY_STAFF: lower left entry and ochre trunk -->
+      <path d="M310 694 H625 V270" stroke="#c27a2c"/>
+      <path d="M625 270 H670" stroke="#c27a2c"/>
+      <path d="M625 455 H670" stroke="#c27a2c"/>
+      <path d="M625 540 H1230 V505" stroke="#c27a2c"/>
+      <path d="M625 620 H670" stroke="#c27a2c"/>
+      <path d="M625 690 H1230 V670" stroke="#c27a2c"/>
+
+      <!-- RESIDENT: right entry and teal trunk -->
+      <path d="M1625 530 H1430 V835" stroke="#167d70"/>
+      <path d="M1430 700 H970 V620" stroke="#167d70"/>
+      <path d="M1430 620 H1380" stroke="#167d70"/>
+      <path d="M1430 835 H1380" stroke="#167d70"/>
+      <path d="M1430 882 H970 V835" stroke="#167d70"/>
+    </g>
+
+    <!-- neutral UML use cases; regional bands, not actor colours, carry classification -->
+    <g stroke-width="2.1">
+      <ellipse cx="820" cy="270" rx="150" ry="50" fill="#fffdfc" stroke="#d4a8a2"/>
+      <ellipse cx="1230" cy="270" rx="150" ry="50" fill="#fffdfc" stroke="#d4a8a2"/>
+      <ellipse cx="820" cy="455" rx="150" ry="50" fill="#ffffff" stroke="#d4a8a2"/>
+      <ellipse cx="1230" cy="455" rx="150" ry="50" fill="#ffffff" stroke="#d4a8a2"/>
+      <ellipse cx="820" cy="620" rx="150" ry="50" fill="#ffffff" stroke="#d4a8a2"/>
+      <ellipse cx="1230" cy="620" rx="150" ry="50" fill="#ffffff" stroke="#d4a8a2"/>
+      <ellipse cx="820" cy="835" rx="150" ry="35" fill="#fffefe" stroke="#b8ccc3"/>
+      <ellipse cx="1230" cy="835" rx="150" ry="35" fill="#fffefe" stroke="#b8ccc3"/>
+    </g>
+    <g text-anchor="middle" class="usecase">
+      <text x="820" y="279">管理空间资产</text>
+      <text x="1230" y="279">跨小区与权限管理</text>
+      <text x="820" y="464">办理入住 / 居住变更</text>
+      <text x="1230" y="464">收费与运营统计</text>
+      <text x="820" y="629">通知与异常服务</text>
+      <text x="1230" y="629">车辆与车证</text>
+      <text x="820" y="844">查看当前居所</text>
+      <text x="1230" y="844">查看账单与通知</text>
+    </g>
+
+    <!-- SYSTEM_ADMIN -->
+    <g transform="translate(205 168)" fill="none" stroke="#a62d2a" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="52" cy="38" r="23"/>
+      <path d="M52 61 L52 135 M17 93 L52 76 L87 93 M29 177 L52 135 L75 177"/>
+      <text x="52" y="222" text-anchor="middle" class="actor-cn" fill="#a62d2a" stroke="none">系统管理员</text>
+      <text x="52" y="250" text-anchor="middle" class="actor-en" fill="#a62d2a" opacity=".72" stroke="none">SYSTEM_ADMIN</text>
+    </g>
+
+    <!-- PROPERTY_STAFF -->
+    <g transform="translate(205 608)" fill="none" stroke="#c27a2c" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="52" cy="38" r="23"/>
+      <path d="M52 61 L52 135 M17 93 L52 76 L87 93 M29 177 L52 135 L75 177"/>
+      <path d="M27 68 Q52 47 77 68"/>
+      <text x="52" y="222" text-anchor="middle" class="actor-cn" fill="#c27a2c" stroke="none">物业工作人员</text>
+      <text x="52" y="250" text-anchor="middle" class="actor-en" fill="#c27a2c" opacity=".72" stroke="none">PROPERTY_STAFF</text>
+    </g>
+
+    <!-- RESIDENT -->
+    <g transform="translate(1625 440)" fill="none" stroke="#167d70" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="52" cy="38" r="23"/>
+      <path d="M52 61 L52 135 M17 93 L52 76 L87 93 M29 177 L52 135 L75 177"/>
+      <text x="52" y="222" text-anchor="middle" class="actor-cn" fill="#167d70" stroke="none">居民</text>
+      <text x="52" y="250" text-anchor="middle" class="actor-en" fill="#167d70" opacity=".72" stroke="none">RESIDENT</text>
+    </g>
+
+    <text x="960" y="980" text-anchor="middle" class="bridge">不同角色执行不同业务，但操作的是同一批现实对象与关系。</text>
+  </svg>
+</body>
+</html>

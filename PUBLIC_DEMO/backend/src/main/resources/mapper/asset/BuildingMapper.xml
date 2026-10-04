@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.asset.mapper.BuildingMapper">
+    <sql id="columns">b.building_id, b.community_id, c.community_name, b.building_no,
+        b.building_name, b.total_floors, b.longitude, b.latitude, b.location_source,
+        b.amap_poi_id, b.location_verified_at, b.status, b.version, b.created_at, b.updated_at,
+        (SELECT COUNT(*) FROM building_unit bu WHERE bu.building_id=b.building_id) AS unit_count,
+        (SELECT COUNT(*) FROM property_unit p JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id
+          WHERE bu.building_id=b.building_id) AS property_count</sql>
+    <select id="findAll" resultType="com.smartproperty.platform.asset.dto.response.BuildingResponse">
+        SELECT <include refid="columns"/> FROM building b JOIN community c ON c.community_id=b.community_id
+        <where>
+            <if test="communityId != null">b.community_id=#{communityId}</if>
+            <if test="status != null and status != ''">AND b.status=#{status}</if>
+            <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND b.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+        </where>
+        ORDER BY c.community_name,b.building_no,b.building_id
+    </select>
+    <select id="findById" resultType="com.smartproperty.platform.asset.dto.response.BuildingResponse">
+        SELECT <include refid="columns"/> FROM building b JOIN community c ON c.community_id=b.community_id
+        WHERE b.building_id=#{buildingId}
+        <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND b.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+    </select>
+    <insert id="insert">
+        INSERT INTO building (community_id,building_no,building_name,total_floors,longitude,latitude,status)
+        VALUES (#{entity.communityId},#{entity.buildingNo},#{entity.buildingName},#{entity.totalFloors},
+                #{entity.longitude},#{entity.latitude},COALESCE(#{entity.status},'ACTIVE'))
+    </insert>
+    <update id="update">
+        UPDATE building SET building_name=#{entity.buildingName},total_floors=#{entity.totalFloors},
+            longitude=#{entity.longitude},latitude=#{entity.latitude},status=COALESCE(#{entity.status},status),version=version+1
+        WHERE building_id=#{buildingId} AND version=#{entity.version}
+    </update>
+    <select id="lastInsertId" resultType="long">SELECT LAST_INSERT_ID()</select>
+</mapper>

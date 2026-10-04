@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.notification.charge.ChargeNoticeMapper">
+  <select id="existsActiveFeeType" resultType="boolean">SELECT EXISTS(SELECT 1 FROM fee_type WHERE fee_type_id=#{feeTypeId} AND status='ACTIVE')</select>
+  <select id="selectDueRows" resultType="com.smartproperty.platform.notification.charge.ChargeNoticeRow">
+    SELECT r.person_id, pu.property_unit_id, pu.property_no, c.community_name, b.building_no, v.bill_id, v.bill_no, v.status AS bill_status,
+           v.outstanding_amount AS bill_outstanding_amount, ft.fee_type_id, ft.fee_code, ft.fee_name, bi.amount AS item_amount
+    FROM residence r
+    JOIN property_unit pu ON pu.property_unit_id=r.property_unit_id
+    JOIN building_unit bu ON bu.building_unit_id=pu.building_unit_id
+    JOIN building b ON b.building_id=bu.building_id
+    JOIN community c ON c.community_id=b.community_id
+    JOIN v_bill_financial_summary v ON v.property_unit_id=pu.property_unit_id
+    JOIN bill_item bi ON bi.bill_id=v.bill_id
+    JOIN fee_standard fs ON fs.fee_standard_id=bi.fee_standard_id
+    JOIN fee_type ft ON ft.fee_type_id=fs.fee_type_id
+    WHERE r.end_date IS NULL
+      AND r.person_id IN <foreach collection="personIds" item="personId" open="(" close=")" separator=",">#{personId}</foreach>
+      AND v.due_date &lt;= CURRENT_DATE
+      AND v.outstanding_amount &gt; 0
+      AND v.status IN ('ISSUED','PARTIALLY_PAID','OVERDUE')
+      <if test="!scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0"> AND b.community_id IN <foreach collection="scope.communityIds" item="communityId" open="(" close=")" separator=",">#{communityId}</foreach></when><otherwise> AND 1=0</otherwise></choose></if>
+    ORDER BY r.person_id, v.bill_id, bi.item_no
+  </select>
+</mapper>

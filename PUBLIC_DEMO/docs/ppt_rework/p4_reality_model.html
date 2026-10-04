@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, initial-scale=1">
+  <title>P4 Reality Model</title>
+  <style>
+    :root { --paper:#fcfbfa; --ink:#2d2928; --muted:#6c6562; --red:#a62d2a; --soft-red:#f8f0ef; --line:#e7d9d6; --chip:#fffdfc; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--paper); }
+    body { font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",Arial,sans-serif; color:var(--ink); }
+    svg { display:block; width:1920px; height:1080px; }
+    .actor-label { font-size:38px; font-weight:700; fill:var(--ink); letter-spacing:.04em; }
+    .actor-note { font-size:18px; fill:var(--muted); letter-spacing:.12em; }
+    .panel-title { font-size:30px; font-weight:700; fill:var(--ink); }
+    .chip { font-size:24px; font-weight:600; fill:var(--ink); }
+    .edge-label { font-size:18px; fill:var(--muted); letter-spacing:.08em; }
+    .chain-text { font-size:18px; font-weight:600; fill:var(--ink); }
+  </style>
+</head>
+<body>
+  <!--
+  THESIS: A calm real-world relationship field, refusing a software flowchart or feature list.
+  OWN-WORLD: Warm paper, restrained university-red lines, and sober charcoal Chinese typography.
+  STORY: Households and property management both act around one shared, growing set of real resources and relationships.
+  FIRST VIEWPORT: Symmetric actors frame one central resource field; a quiet complexity chain completes the lower third.
+  FORM: Precisely specified classroom diagram; no visual-world replacement or extra product claims.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+  -->
+  <svg viewBox="0 0 1920 1080" role="img" aria-label="居民与物业围绕现实资源与业务关系互动，复杂性随时间增长">
+    <defs>
+      <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#a62d2a"/></marker>
+    </defs>
+
+    <!-- left resident actor -->
+    <g transform="translate(250 378)">
+      <circle cx="78" cy="46" r="34" fill="none" stroke="#a62d2a" stroke-width="5"/>
+      <path d="M78 83 L78 190 M24 128 L78 105 L132 128 M42 246 L78 190 L114 246" fill="none" stroke="#2d2928" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="78" y="310" text-anchor="middle" class="actor-label">居民</text>
+      <text x="78" y="347" text-anchor="middle" class="actor-note">使用 · 产生业务</text>
+    </g>
+
+    <!-- right property actor -->
+    <g transform="translate(1514 378)">
+      <circle cx="78" cy="46" r="34" fill="none" stroke="#a62d2a" stroke-width="5"/>
+      <path d="M78 83 L78 190 M24 128 L78 105 L132 128 M42 246 L78 190 L114 246" fill="none" stroke="#2d2928" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 98 Q78 70 112 98" fill="none" stroke="#a62d2a" stroke-width="5" stroke-linecap="round"/>
+      <text x="78" y="310" text-anchor="middle" class="actor-label">物业</text>
+      <text x="78" y="347" text-anchor="middle" class="actor-note">管理 · 维护业务</text>
+    </g>
+
+    <!-- shared real-world field -->
+    <rect x="575" y="182" width="770" height="492" rx="32" fill="#fffdfc" stroke="#e7d9d6" stroke-width="2"/>
+    <line x1="645" y1="276" x2="1275" y2="276" stroke="#e7d9d6" stroke-width="2"/>
+    <text x="960" y="246" text-anchor="middle" class="panel-title">现实资源与业务关系</text>
+
+    <g fill="#fffdfc" stroke="#e7d9d6" stroke-width="2">
+      <rect x="650" y="314" width="270" height="62" rx="31"/>
+      <rect x="1000" y="314" width="270" height="62" rx="31"/>
+      <rect x="650" y="404" width="270" height="62" rx="31"/>
+      <rect x="1000" y="404" width="270" height="62" rx="31"/>
+      <rect x="650" y="494" width="270" height="62" rx="31"/>
+      <rect x="1000" y="494" width="270" height="62" rx="31"/>
+      <rect x="650" y="584" width="270" height="62" rx="31"/>
+      <rect x="1000" y="584" width="270" height="62" rx="31"/>
+    </g>
+    <g text-anchor="middle" class="chip">
+      <text x="785" y="354">房产资产</text><text x="1135" y="354">人员关系</text>
+      <text x="785" y="444">费用与账单</text><text x="1135" y="444">表计与读数</text>
+      <text x="785" y="534">车辆与车证</text><text x="1135" y="534">通知与异常</text>
+      <text x="785" y="624">空间位置</text><text x="1135" y="624">房产资料</text>
+    </g>
+
+    <!-- associations, drawn behind the central field labels -->
+    <path d="M450 520 H572" fill="none" stroke="#a62d2a" stroke-width="3" marker-end="url(#arrow-red)"/>
+    <path d="M1470 520 H1348" fill="none" stroke="#a62d2a" stroke-width="3" marker-end="url(#arrow-red)"/>
+    <text x="500" y="487" text-anchor="middle" class="edge-label">围绕同一中心</text>
+    <text x="1420" y="487" text-anchor="middle" class="edge-label">围绕同一中心</text>
+
+    <!-- complexity accumulation chain -->
+    <line x1="415" y1="846" x2="1505" y2="846" stroke="#e7d9d6" stroke-width="3"/>
+    <g fill="#fcfbfa" stroke="#a62d2a" stroke-width="3">
+      <circle cx="470" cy="846" r="11"/><circle cx="735" cy="846" r="11"/><circle cx="1000" cy="846" r="11"/><circle cx="1265" cy="846" r="11"/><circle cx="1500" cy="846" r="11"/>
+    </g>
+    <g fill="#a62d2a"><path d="M594 840 L606 846 L594 852 Z"/><path d="M859 840 L871 846 L859 852 Z"/><path d="M1124 840 L1136 846 L1124 852 Z"/><path d="M1389 840 L1401 846 L1389 852 Z"/></g>
+    <g text-anchor="middle" class="chain-text">
+      <text x="470" y="807">资源种类增加</text><text x="735" y="807">人员关系增加</text><text x="1000" y="807">业务操作增加</text><text x="1265" y="807">时间持续累积</text><text x="1500" y="807">数据规模增长</text>
+    </g>
+  </svg>
+</body>
+</html>

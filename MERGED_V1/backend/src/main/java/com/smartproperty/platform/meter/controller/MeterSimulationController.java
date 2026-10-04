@@ -1,0 +1,3 @@
+package com.smartproperty.platform.meter.controller;
+import com.smartproperty.platform.access.AuthorizationService;import com.smartproperty.platform.meter.service.MeterSimulationService;import com.smartproperty.platform.meter.vo.MeterSimulationResultVO;import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/api/admin/meter-simulator") public class MeterSimulationController {private final MeterSimulationService s;private final AuthorizationService a;public MeterSimulationController(MeterSimulationService x,AuthorizationService y){s=x;a=y;}@PostMapping("/simulate-now")public MeterSimulationResultVO now(){a.requireSystemAdmin();return s.simulateNow();}}

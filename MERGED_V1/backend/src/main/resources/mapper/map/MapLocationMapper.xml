@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.map.mapper.MapLocationMapper">
+    <select id="selectActiveBuildingsForLocationSync" resultType="com.smartproperty.platform.map.model.BuildingLocationCandidate">
+        SELECT b.building_id AS buildingId, b.community_id AS communityId,
+               c.community_name AS communityName, c.address_line AS communityAddress,
+               b.building_no AS buildingNo, b.building_name AS buildingName,
+               b.longitude, b.latitude
+        FROM building b
+        INNER JOIN community c ON c.community_id = b.community_id
+        WHERE b.status = 'ACTIVE'
+        ORDER BY c.community_id, b.building_id
+    </select>
+
+    <update id="updateBuildingLocationIfMissing">
+        UPDATE building
+        SET longitude = #{longitude}, latitude = #{latitude}, location_source = 'AMAP'
+        WHERE building_id = #{buildingId}
+          AND status = 'ACTIVE'
+          AND (longitude IS NULL OR latitude IS NULL)
+    </update>
+
+    <select id="selectLocatedActiveBuildings" resultType="com.smartproperty.platform.map.model.LocatedBuildingCoordinate">
+        SELECT b.community_id AS communityId, c.community_name AS communityName,
+               b.building_id AS buildingId, b.building_no AS buildingNo, b.building_name AS buildingName,
+               b.longitude, b.latitude
+        FROM building b
+        INNER JOIN community c ON c.community_id = b.community_id
+        WHERE b.status = 'ACTIVE' AND b.longitude IS NOT NULL AND b.latitude IS NOT NULL
+        ORDER BY c.community_id, b.building_id
+    </select>
+
+    <select id="selectMissingCommunityCentroidsFromBuildings" resultType="com.smartproperty.platform.map.model.CommunityCentroidCandidate">
+        SELECT c.community_id AS communityId, AVG(b.longitude) AS longitude, AVG(b.latitude) AS latitude
+        FROM community c
+        INNER JOIN building b ON b.community_id = c.community_id
+           AND b.status = 'ACTIVE' AND b.longitude IS NOT NULL AND b.latitude IS NOT NULL
+        WHERE c.longitude IS NULL OR c.latitude IS NULL
+        GROUP BY c.community_id
+    </select>
+
+    <update id="updateCommunityCentroidIfMissing">
+        UPDATE community
+        SET longitude = #{longitude}, latitude = #{latitude},
+            location_source = 'AMAP', coordinate_system = 'GCJ02'
+        WHERE community_id = #{communityId}
+          AND (longitude IS NULL OR latitude IS NULL)
+    </update>
+</mapper>

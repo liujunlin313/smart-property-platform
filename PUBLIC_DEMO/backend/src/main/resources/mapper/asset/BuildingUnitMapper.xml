@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.asset.mapper.BuildingUnitMapper">
+    <sql id="columns">bu.building_unit_id,bu.building_id,
+        COALESCE(b.building_name,CONCAT(b.building_no,'号楼')) AS building_name,
+        bu.unit_no,bu.unit_name,bu.status,bu.version,bu.created_at,bu.updated_at,
+        (SELECT COUNT(*) FROM property_unit p WHERE p.building_unit_id=bu.building_unit_id) AS property_count</sql>
+    <select id="findAll" resultType="com.smartproperty.platform.asset.dto.response.BuildingUnitResponse">
+        SELECT <include refid="columns"/> FROM building_unit bu JOIN building b ON b.building_id=bu.building_id
+        <where>
+            <if test="buildingId != null">bu.building_id=#{buildingId}</if>
+            <if test="status != null and status != ''">AND bu.status=#{status}</if>
+            <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND b.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+        </where>
+        ORDER BY b.building_no,bu.unit_no,bu.building_unit_id
+    </select>
+    <select id="findById" resultType="com.smartproperty.platform.asset.dto.response.BuildingUnitResponse">
+        SELECT <include refid="columns"/> FROM building_unit bu JOIN building b ON b.building_id=bu.building_id
+        WHERE bu.building_unit_id=#{buildingUnitId}
+        <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND b.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+    </select>
+    <insert id="insert">
+        INSERT INTO building_unit (building_id,unit_no,unit_name,status)
+        VALUES (#{entity.buildingId},#{entity.unitNo},#{entity.unitName},COALESCE(#{entity.status},'ACTIVE'))
+    </insert>
+    <update id="update">
+        UPDATE building_unit SET unit_name=#{entity.unitName},status=COALESCE(#{entity.status},status),version=version+1
+        WHERE building_unit_id=#{buildingUnitId} AND version=#{entity.version}
+    </update>
+    <select id="lastInsertId" resultType="long">SELECT LAST_INSERT_ID()</select>
+</mapper>

@@ -1,0 +1,24 @@
+# Docker build context is the project root because backend packaging includes database/migrations.
+.git
+.idea
+.vscode
+**/*.iml
+**/target
+**/node_modules
+**/dist
+**/logs
+
+# Local-only configuration, credentials, and runtime data never enter an image.
+.env.docker
+deploy/local.env.ps1
+deploy/local.env.properties
+deploy/runtime
+deploy/minio-data
+frontend/.env.local
+deploy/docker/.env.minio-recovery
+
+# Non-source artifacts.
+docs/ppt_final
+docs/ppt_assets
+Thumbs.db
+.DS_Store

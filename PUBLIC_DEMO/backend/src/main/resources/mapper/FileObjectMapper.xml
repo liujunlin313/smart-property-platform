@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.file.mapper.FileObjectMapper">
+    <insert id="insertFileObject" useGeneratedKeys="true" keyProperty="file.fileObjectId" keyColumn="file_object_id">
+        INSERT INTO file_object (
+            bucket_name, object_key, original_name, content_type,
+            size_bytes, sha256, uploaded_by_account_id, status
+        ) VALUES (
+            #{file.bucketName}, #{file.objectKey}, #{file.originalName}, #{file.contentType},
+            #{file.sizeBytes}, #{file.sha256}, #{file.uploadedByAccountId}, 'ACTIVE'
+        )
+    </insert>
+
+    <select id="findPropertyFloorPlan" resultType="com.smartproperty.platform.file.model.FileObjectRow">
+        SELECT fo.file_object_id, pfp.property_unit_id, fo.bucket_name, fo.object_key,
+               fo.original_name, fo.content_type, fo.size_bytes, fo.sha256, fo.status
+        FROM property_floor_plan pfp
+        JOIN file_object fo ON fo.file_object_id = pfp.file_object_id
+        WHERE pfp.property_unit_id = #{propertyUnitId}
+          AND fo.status = 'ACTIVE'
+    </select>
+
+    <select id="findActiveBySha256" resultType="com.smartproperty.platform.file.model.FileObjectRow">
+        SELECT fo.file_object_id, CAST(NULL AS UNSIGNED) AS property_unit_id, fo.bucket_name, fo.object_key,
+               fo.original_name, fo.content_type, fo.size_bytes, fo.sha256, fo.status
+        FROM file_object fo
+        WHERE fo.bucket_name = #{bucketName}
+          AND fo.sha256 = #{sha256}
+          AND fo.status = 'ACTIVE'
+        ORDER BY fo.file_object_id
+        LIMIT 1
+    </select>
+
+    <insert id="upsertPropertyFloorPlan">
+        INSERT INTO property_floor_plan (property_unit_id, file_object_id)
+        VALUES (#{propertyUnitId}, #{fileObjectId})
+        ON DUPLICATE KEY UPDATE
+            file_object_id = VALUES(file_object_id),
+            uploaded_at = CURRENT_TIMESTAMP(3)
+    </insert>
+
+    <update id="markFileDeleted">
+        UPDATE file_object
+        SET status = 'DELETED', deleted_at = CURRENT_TIMESTAMP(3)
+        WHERE file_object_id = #{fileObjectId} AND status = 'ACTIVE'
+    </update>
+</mapper>

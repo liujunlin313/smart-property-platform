@@ -1,0 +1,8 @@
+# Copy to a private location or pass these values as command-line/system properties.
+# Never commit a real password.
+flyway.url=jdbc:mysql://127.0.0.1:3306/smart_property?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+flyway.user=smart_property
+flyway.password=change_me
+flyway.locations=filesystem:../migrations
+flyway.validateMigrationNaming=true
+

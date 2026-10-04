@@ -1,0 +1,112 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  forward-headers-strategy: framework
+  error:
+    include-message: never
+    include-stacktrace: never
+
+spring:
+  application:
+    name: smart-property-backend
+  output:
+    ansi:
+      enabled: always
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/community_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8}
+    username: ${DB_USERNAME:community_app}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+  flyway:
+    # Phase 2A Stabilization: the user's single community_db is the development database.
+    # Flyway V1-V3 history remains readable, while automatic schema mutation is frozen.
+    enabled: ${APP_FLYWAY_ENABLED:false}
+    locations: classpath:db/migration
+    validate-migration-naming: true
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: 800ms
+      timeout: 800ms
+      repositories:
+        enabled: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    arg-name-based-constructor-auto-mapping: true
+    jdbc-type-for-null: 'NULL'
+    default-statement-timeout: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    redis:
+      enabled: false
+
+app:
+  stage1:
+    # Mock identity remains available only when explicitly enabled for isolated tests.
+    mock-admin-enabled: ${APP_STAGE1_MOCK_ADMIN_ENABLED:false}
+  security:
+    jwt-secret-base64: ${APP_JWT_SECRET_BASE64:}
+    issuer: ${APP_JWT_ISSUER:smart-property-local}
+    audience: ${APP_JWT_AUDIENCE:smart-property-web}
+    access-token-minutes: 10
+    refresh-token-hours: 8
+    refresh-cookie-secure: ${APP_REFRESH_COOKIE_SECURE:false}
+    allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:5173}
+  bootstrap:
+    admin-username: ${APP_BOOTSTRAP_ADMIN_USERNAME:}
+    admin-password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
+    viewer-username: ${APP_BOOTSTRAP_VIEWER_USERNAME:}
+    viewer-password: ${APP_BOOTSTRAP_VIEWER_PASSWORD:}
+    reconcile-local: ${APP_BOOTSTRAP_RECONCILE_LOCAL:false}
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+    access-key: ${MINIO_ACCESS_KEY:}
+    secret-key: ${MINIO_SECRET_KEY:}
+    property-bucket: ${MINIO_PROPERTY_BUCKET:property-assets}
+  map:
+    provider: ${APP_MAP_PROVIDER:amap}
+    amap:
+      web-service-key: ${AMAP_WEB_SERVICE_KEY:}
+      web-service-private-key: ${AMAP_WEB_SERVICE_PRIVATE_KEY:}
+      base-url: ${AMAP_WEB_SERVICE_BASE_URL:https://restapi.amap.com}
+  dev:
+    client-events-enabled: ${APP_DEV_CLIENT_EVENTS_ENABLED:false}
+    exception-probe-enabled: ${APP_DEV_EXCEPTION_PROBE_ENABLED:false}
+  logging:
+    flow-enabled: ${APP_FLOW_LOG_ENABLED:true}
+    sql-max-length: ${APP_FLOW_SQL_MAX_LENGTH:420}
+  meter-simulator:
+    enabled: ${APP_METER_SIMULATOR_ENABLED:false}
+    mode: ${APP_METER_SIMULATOR_MODE:NORMAL}
+    electricity-demo-interval-ms: ${APP_METER_SIMULATOR_ELECTRICITY_DEMO_INTERVAL_MS:30000}
+    water-demo-interval-ms: ${APP_METER_SIMULATOR_WATER_DEMO_INTERVAL_MS:60000}
+    gas-demo-interval-ms: ${APP_METER_SIMULATOR_GAS_DEMO_INTERVAL_MS:120000}
+
+logging:
+  level:
+    root: INFO
+    com.smartproperty.platform: INFO
+    org.mybatis: WARN

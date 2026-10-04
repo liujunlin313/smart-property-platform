@@ -1,0 +1,8 @@
+# Kept beside the backend for editors and standalone backend builds.
+target
+logs
+.idea
+*.iml
+deploy/local.env.ps1
+deploy/local.env.properties
+.env.docker

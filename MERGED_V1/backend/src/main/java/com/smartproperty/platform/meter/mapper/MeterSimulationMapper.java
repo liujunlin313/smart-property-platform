@@ -1,0 +1,3 @@
+package com.smartproperty.platform.meter.mapper;
+import org.apache.ibatis.annotations.*;import java.math.BigDecimal;import java.time.LocalDateTime;import java.util.*;
+@Mapper public interface MeterSimulationMapper {List<MeterState> selectActiveMeterStates(@Param("feeNames")List<String> feeNames);List<Long> selectExistingMeterIds(@Param("meterIds")List<Long> ids,@Param("readingAt")LocalDateTime at);int insertReadings(@Param("readings")List<ReadingCommand> readings);record MeterState(Long meterId,String feeCode,BigDecimal initialReading,BigDecimal latestReading){} record ReadingCommand(Long meterId,LocalDateTime readingAt,BigDecimal readingValue,String note){}}

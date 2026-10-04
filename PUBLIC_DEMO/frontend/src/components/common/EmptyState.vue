@@ -1,0 +1,3 @@
+<script setup>defineProps({ title:{type:String,default:'当前暂无数据'},description:{type:String,default:''} })</script>
+<template><div class="empty-state"><el-empty :image-size="54"><template #description><strong>{{title}}</strong><p v-if="description">{{description}}</p></template></el-empty></div></template>
+<style scoped>.empty-state{min-height:180px;display:grid;place-items:center}.empty-state :deep(.el-empty__description){margin-top:7px;text-align:center}.empty-state strong{display:block;color:var(--ink-700);font-size:14px}.empty-state p{max-width:280px;margin:6px auto 0;color:var(--ink-500);font-size:12px;line-height:1.65}</style>

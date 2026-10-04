@@ -1,0 +1,166 @@
+name: smart-property-public-demo-data
+
+services:
+  mysql:
+    image: mysql:8.0.43
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: community_db
+      MYSQL_USER: ${MYSQL_APP_USER:?Set MYSQL_APP_USER in .env.docker}
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:?Set MYSQL_APP_PASSWORD in .env.docker}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.docker}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+      - --log-error=/var/log/mysql/error/mysql-error.log
+      - --slow-query-log=ON
+      - --slow-query-log-file=/var/log/mysql/slow/mysql-slow.log
+      - --long-query-time=0.5
+    ports:
+      - "127.0.0.1:${PUBLIC_MYSQL_HOST_PORT:-33307}:3306"
+    volumes:
+      - public_demo_mysql_data:/var/lib/mysql
+      - type: bind
+        source: ${PUBLIC_DEMO_LOG_ROOT:?Set PUBLIC_DEMO_LOG_ROOT in .env.docker}/database-runtime/mysql/error
+        target: /var/log/mysql/error
+      - type: bind
+        source: ${PUBLIC_DEMO_LOG_ROOT:?Set PUBLIC_DEMO_LOG_ROOT in .env.docker}/database-runtime/mysql/slow
+        target: /var/log/mysql/slow
+    networks:
+      - public_demo_network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks:
+      - public_demo_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.docker}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.docker}
+    command: server /data --console-address ":9001"
+    ports:
+      - "127.0.0.1:${PUBLIC_MINIO_API_HOST_PORT:-19000}:9000"
+      - "127.0.0.1:${PUBLIC_MINIO_CONSOLE_HOST_PORT:-19001}:9001"
+    volumes:
+      - public_demo_minio_data:/data
+    networks:
+      - public_demo_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: smart-property-public-demo-backend:local
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_PORT: 8080
+      DB_URL: jdbc:mysql://mysql:3306/community_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      DB_USERNAME: ${MYSQL_APP_USER:?Set MYSQL_APP_USER in .env.docker}
+      DB_PASSWORD: ${MYSQL_APP_PASSWORD:?Set MYSQL_APP_PASSWORD in .env.docker}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.docker}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.docker}
+      MINIO_PROPERTY_BUCKET: property-assets
+      APP_DEV_BOOTSTRAP: "false"
+      APP_FLYWAY_ENABLED: "false"
+      APP_JWT_SECRET_BASE64: ${APP_JWT_SECRET_BASE64:?Set APP_JWT_SECRET_BASE64 in .env.docker}
+      APP_JWT_ISSUER: smart-property-public-demo
+      APP_JWT_AUDIENCE: smart-property-web
+      APP_REFRESH_COOKIE_SECURE: "false"
+      APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-http://127.0.0.1:18080,http://localhost:18080}
+      
+      APP_PUBLIC_WEB_URL: http://127.0.0.1:${PUBLIC_WEB_HOST_PORT:-18080}
+      APP_LOG_ROOT: /app/logs
+      APP_DEPLOYMENT_ID: ${PUBLIC_DEMO_DEPLOYMENT_ID:-D-UNTRACKED}
+      APP_METER_SIMULATOR_ENABLED: "false"
+      AMAP_WEB_SERVICE_KEY: ${AMAP_WEB_SERVICE_KEY:?Set AMAP_WEB_SERVICE_KEY in .env.docker}
+      AMAP_WEB_SERVICE_PRIVATE_KEY: ${AMAP_WEB_SERVICE_PRIVATE_KEY:?Set AMAP_WEB_SERVICE_PRIVATE_KEY in .env.docker}
+    ports:
+      - "127.0.0.1:${PUBLIC_BACKEND_HOST_PORT:-18081}:8080"
+    volumes:
+      - type: bind
+        source: ${PUBLIC_DEMO_ACTIVE_RUN_LOG_ROOT:?Set PUBLIC_DEMO_ACTIVE_RUN_LOG_ROOT in .env.docker}
+        target: /app/logs
+    networks:
+      - public_demo_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_AMAP_JS_KEY: ${VITE_AMAP_JS_KEY:?Set VITE_AMAP_JS_KEY in .env.docker}
+        VITE_AMAP_JS_SECURITY_CODE: ${VITE_AMAP_JS_SECURITY_CODE:?Set VITE_AMAP_JS_SECURITY_CODE in .env.docker}
+    image: smart-property-public-demo-web:local
+    restart: unless-stopped
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${PUBLIC_WEB_HOST_PORT:-18080}:80"
+    volumes:
+      - type: bind
+        source: ${PUBLIC_DEMO_ACTIVE_RUN_LOG_ROOT:?Set PUBLIC_DEMO_ACTIVE_RUN_LOG_ROOT in .env.docker}
+        target: /var/log/nginx
+    networks:
+      - public_demo_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+volumes:
+  public_demo_mysql_data:
+    name: smart_property_public_demo_mysql_data
+  public_demo_minio_data:
+    name: smart_property_public_demo_minio_data
+
+networks:
+  public_demo_network:
+    name: smart_property_public_demo_network
+    driver: bridge

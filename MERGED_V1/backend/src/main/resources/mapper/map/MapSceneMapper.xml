@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.map.mapper.MapSceneMapper">
+    <select id="selectCommunityMapPoints" resultType="com.smartproperty.platform.map.model.CommunityMapPointRow">
+        SELECT c.community_id AS communityId, c.community_code AS communityCode, c.community_name AS communityName,
+               c.address_line AS address, c.longitude, c.latitude, c.coordinate_system AS coordinateSystem,
+               COUNT(DISTINCT b.building_id) AS buildingCount,
+               COUNT(DISTINCT p.property_unit_id) AS propertyCount,
+               COUNT(DISTINCT CASE WHEN p.occupancy_status IN ('OWNER_OCCUPIED', 'TENANT_OCCUPIED') THEN p.property_unit_id END) AS occupiedPropertyCount
+        FROM community c
+        LEFT JOIN building b ON b.community_id = c.community_id AND b.status = 'ACTIVE'
+        LEFT JOIN building_unit bu ON bu.building_id = b.building_id AND bu.status = 'ACTIVE'
+        LEFT JOIN property_unit p ON p.building_unit_id = bu.building_unit_id AND p.status = 'ACTIVE'
+        WHERE c.status = 'ACTIVE'
+        <if test="!scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+        GROUP BY c.community_id, c.community_code, c.community_name, c.address_line, c.longitude, c.latitude, c.coordinate_system
+        ORDER BY c.community_id
+    </select>
+
+    <select id="selectBuildingMapPoints" resultType="com.smartproperty.platform.map.model.BuildingMapPointRow">
+        SELECT b.building_id AS buildingId, c.community_id AS communityId, c.community_name AS communityName,
+               b.building_no AS buildingNo, b.building_name AS buildingName,
+               CONCAT(c.address_line, COALESCE(NULLIF(b.building_name, ''), b.building_no)) AS fullAddress,
+               b.longitude, b.latitude, b.total_floors AS totalFloors, b.location_source AS locationSource,
+               COUNT(DISTINCT bu.building_unit_id) AS unitCount,
+               COUNT(DISTINCT p.property_unit_id) AS propertyCount,
+               COUNT(DISTINCT CASE WHEN p.occupancy_status IN ('OWNER_OCCUPIED', 'TENANT_OCCUPIED') THEN p.property_unit_id END) AS occupiedPropertyCount
+        FROM building b
+        INNER JOIN community c ON c.community_id = b.community_id AND c.status = 'ACTIVE'
+        LEFT JOIN building_unit bu ON bu.building_id = b.building_id AND bu.status = 'ACTIVE'
+        LEFT JOIN property_unit p ON p.building_unit_id = bu.building_unit_id AND p.status = 'ACTIVE'
+        WHERE b.status = 'ACTIVE'
+        <if test="!scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+        GROUP BY b.building_id, c.community_id, c.community_name, c.address_line, b.building_no, b.building_name,
+                 b.longitude, b.latitude, b.total_floors, b.location_source
+        ORDER BY c.community_id, b.building_id
+    </select>
+</mapper>

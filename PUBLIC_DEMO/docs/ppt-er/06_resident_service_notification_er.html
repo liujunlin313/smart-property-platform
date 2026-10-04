@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=1920, initial-scale=1"><title>居民服务与通知 ER 图</title>
+<style>
+html,body{margin:0;background:#f7f5fa;font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif}svg{display:block;width:1920px;height:1080px;background:#fdfcff}.title{font-size:35px;font-weight:800;fill:#42334e}.sub{font-size:18px;fill:#756a82}.zone{fill:#f2eff8;stroke:#d1c3e1;stroke-width:1.5}.zone2{fill:#eef7f5;stroke:#c2ddd6;stroke-width:1.5}.zone-title{font-size:22px;font-weight:800;letter-spacing:.5px}.cn{font-size:24px;font-weight:800;fill:#443650}.en{font-size:15px;letter-spacing:.6px;fill:#7c7187}.field{font-size:16px;fill:#5b4e64}.small{font-size:14px;fill:#766d7f}.card rect{fill:#fff;stroke:#8a6aa2;stroke-width:2}.card.green rect{stroke:#348777}.line{stroke:#79658b;stroke-width:3;fill:none;stroke-linecap:round}.line-green{stroke:#4c897e;stroke-width:3;fill:none;stroke-linecap:round}.relbox{fill:#fdfcff;stroke:#dfd6e7;stroke-width:1}.relbox-green{fill:#fdfcff;stroke:#cee0da;stroke-width:1}.rel{font-size:15px;font-weight:800;fill:#5a476a}.rel-green{font-size:15px;font-weight:800;fill:#397269}.n{font-size:17px;font-weight:800;fill:#73558b}.n-green{font-size:17px;font-weight:800;fill:#397269}.callout{fill:#fff7dd;stroke:#dfbe63;stroke-width:1.5}.calloutT{font-size:20px;font-weight:800;fill:#805e17}.calloutX{font-size:17px;fill:#6b5728}.note{font-size:14px;fill:#81778a}
+</style></head><body><svg viewBox="0 0 1920 1080" aria-label="居民服务与通知 ER 图">
+<text x="78" y="76" class="title">居民服务 · 通知收件 ER 图</text><text x="80" y="112" class="sub">只表达持久化业务关系：通知经收件关系连接人员；居民报事同时关联上报人员与房产</text>
+<rect class="zone" x="64" y="164" width="1060" height="650" rx="28"/><text x="102" y="212" class="zone-title" fill="#76568d">通知与收件关系</text>
+<rect class="zone2" x="1164" y="164" width="688" height="650" rx="28"/><text x="1202" y="212" class="zone-title" fill="#287a6c">居民报事</text>
+
+<!-- 所有连线先绘制，确保连线位于实体框下层 -->
+<path class="line" d="M430 455 H540"/><path class="line" d="M870 455 H925"/>
+<path class="line-green" d="M1095 500 H1280"/><path class="line-green" d="M1580 480 H1640"/>
+
+<!-- 通知—收件关系—人员：两条 1:N 关系 -->
+<g><rect class="relbox" x="438" y="400" width="94" height="28" rx="12"/><text x="451" y="421" class="rel">展开收件人</text><text x="414" y="444" class="n">1</text><text x="522" y="444" class="n">N</text></g>
+<g><rect class="relbox" x="876" y="400" width="44" height="28" rx="12"/><text x="888" y="421" class="rel">属于</text><text x="854" y="444" class="n">N</text><text x="910" y="444" class="n">1</text></g>
+
+<g class="card"><rect x="150" y="342" width="280" height="226" rx="18"/><text x="178" y="390" class="cn">物业通知</text><text x="178" y="419" class="en">notification</text><text x="178" y="454" class="field">主题 · 分类 · 状态</text><text x="178" y="486" class="field">正文 · 发送时间</text><text x="178" y="522" class="small">一条通知可展开为多个收件人</text></g>
+<g class="card"><rect x="540" y="294" width="330" height="322" rx="18"/><text x="568" y="342" class="cn">通知收件关系</text><text x="568" y="371" class="en">notification_recipient</text><text x="568" y="410" class="field">连接 Notification 与 Person</text><text x="568" y="446" class="field">recipient_role（TO / CC）</text><text x="568" y="478" class="field">delivery_status</text><text x="568" y="510" class="field">read_at</text><text x="568" y="552" class="small">同一通知、同一人员只保留一条收件关系</text></g>
+<g class="card green"><rect x="925" y="342" width="170" height="226" rx="18"/><text x="953" y="390" class="cn">人员</text><text x="953" y="419" class="en">person</text><text x="953" y="454" class="field">实际收件人</text><text x="953" y="486" class="field">报事提交人</text><text x="953" y="522" class="small">现实业务身份</text></g>
+
+<!-- 居民报事：人员与房产分别 1:N 指向报事实体 -->
+<g><rect class="relbox-green" x="1168" y="440" width="100" height="28" rx="12"/><text x="1180" y="461" class="rel-green">提交报事</text><text x="1128" y="492" class="n-green">1</text><text x="1268" y="492" class="n-green">N</text></g>
+<g><rect class="relbox-green" x="1588" y="446" width="44" height="28" rx="12"/><text x="1600" y="467" class="rel-green">关联</text><text x="1562" y="470" class="n-green">N</text><text x="1630" y="470" class="n-green">1</text></g>
+<g class="card green"><rect x="1280" y="310" width="300" height="242" rx="18"/><text x="1308" y="358" class="cn">居民异常 / 报事</text><text x="1308" y="387" class="en">resident_incident</text><text x="1308" y="424" class="field">类别 · 描述</text><text x="1308" y="456" class="field">处理状态 · 解决时间</text><text x="1308" y="492" class="small">由具体人员提交，并落到具体房产</text></g>
+<g class="card green"><rect x="1640" y="352" width="170" height="156" rx="18"/><text x="1668" y="400" class="cn">房产</text><text x="1668" y="429" class="en">property_unit</text><text x="1668" y="466" class="field">报事关联对象</text></g>
+
+<rect class="callout" x="120" y="872" width="1680" height="76" rx="16"/><text x="150" y="905" class="calloutT">重点：</text><text x="238" y="905" class="calloutX">Notification 与 Person 的 N:M 关系通过 NotificationRecipient 实体化，投递状态与已读时间属于具体收件关系。</text>
+<line x1="80" y1="992" x2="1840" y2="992" stroke="#ddd6e5"/><text x="82" y="1027" class="note">发送时可按小区、楼栋或房产筛选目标范围，由服务层解析为具体 Person；该筛选范围不是 Notification 的直接持久化外键。</text>
+</svg></body></html>

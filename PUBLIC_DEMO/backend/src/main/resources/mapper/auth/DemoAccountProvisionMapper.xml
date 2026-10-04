@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.auth.provision.mapper.DemoAccountProvisionMapper">
+  <select id="selectActiveCommunities" resultType="com.smartproperty.platform.auth.provision.model.CommunityProvisionRow">SELECT community_id, community_name FROM community WHERE status='ACTIVE' ORDER BY community_id</select>
+  <select id="selectRoleId" resultType="int">SELECT role_id FROM app_role WHERE role_code=#{roleCode}</select>
+  <select id="findAccountByUsername" resultType="com.smartproperty.platform.auth.model.AccountRow">SELECT account_id,person_id,username,password_hash,status,failed_login_attempts,locked_until,token_version,last_login_at FROM app_account WHERE username=#{username}</select>
+  <select id="findAccountByPersonId" resultType="com.smartproperty.platform.auth.model.AccountRow">SELECT account_id,person_id,username,password_hash,status,failed_login_attempts,locked_until,token_version,last_login_at FROM app_account WHERE person_id=#{personId}</select>
+  <insert id="insertPersonAccount">INSERT INTO app_account(username,password_hash,person_id,status) VALUES(#{username},#{passwordHash},#{personId},'ACTIVE')</insert>
+  <insert id="insertStaffAccount">INSERT INTO app_account(username,password_hash,status) VALUES(#{username},#{passwordHash},'ACTIVE')</insert>
+  <insert id="addRole">INSERT IGNORE INTO account_global_role(account_id,role_id) VALUES(#{accountId},#{roleId})</insert>
+  <insert id="activateScope">INSERT INTO account_community_scope(account_id,community_id,status,assigned_by_account_id,assigned_at) VALUES(#{accountId},#{communityId},'ACTIVE',#{assignedByAccountId},CURRENT_TIMESTAMP(3)) ON DUPLICATE KEY UPDATE status='ACTIVE',assigned_by_account_id=VALUES(assigned_by_account_id),assigned_at=CURRENT_TIMESTAMP(3)</insert>
+  <select id="hasResidentOwnerTenantPair" resultType="boolean">
+    SELECT EXISTS(SELECT 1 FROM ownership o JOIN residence r ON r.property_unit_id=o.property_unit_id AND r.end_date IS NULL AND r.person_id&lt;&gt;o.person_id JOIN app_account owner_account ON owner_account.person_id=o.person_id JOIN app_account tenant_account ON tenant_account.person_id=r.person_id JOIN account_global_role owner_role_rel ON owner_role_rel.account_id=owner_account.account_id JOIN account_global_role tenant_role_rel ON tenant_role_rel.account_id=tenant_account.account_id JOIN app_role owner_role ON owner_role.role_id=owner_role_rel.role_id AND owner_role.role_code='PERSON_USER' JOIN app_role tenant_role ON tenant_role.role_id=tenant_role_rel.role_id AND tenant_role.role_code='PERSON_USER' WHERE o.end_date IS NULL)
+  </select>
+  <select id="selectUnprovisionedTenantPersonIdForResidentOwner" resultType="long">
+    SELECT tenant.person_id FROM residence tenant JOIN ownership o ON o.property_unit_id=tenant.property_unit_id AND o.end_date IS NULL AND o.person_id&lt;&gt;tenant.person_id JOIN app_account owner_account ON owner_account.person_id=o.person_id JOIN account_global_role owner_role_rel ON owner_role_rel.account_id=owner_account.account_id JOIN app_role owner_role ON owner_role.role_id=owner_role_rel.role_id AND owner_role.role_code='PERSON_USER' LEFT JOIN app_account tenant_account ON tenant_account.person_id=tenant.person_id WHERE tenant.end_date IS NULL AND tenant_account.account_id IS NULL ORDER BY tenant.person_id LIMIT 1
+  </select>
+  <select id="selectResidentCandidates" resultType="com.smartproperty.platform.auth.provision.model.ResidentProvisionCandidate">
+    WITH current_resident AS (
+      SELECT r.person_id,r.residence_role,pu.occupancy_status,
+        EXISTS(SELECT 1 FROM ownership o WHERE o.person_id=r.person_id AND o.end_date IS NULL) AS owner_flag,
+        EXISTS(SELECT 1 FROM ownership o WHERE o.property_unit_id=r.property_unit_id AND o.end_date IS NULL AND o.person_id&lt;&gt;r.person_id) AS owner_tenant_pair
+      FROM residence r JOIN property_unit pu ON pu.property_unit_id=r.property_unit_id WHERE r.end_date IS NULL
+    ), paired_people AS (
+      SELECT DISTINCT o.person_id FROM ownership o JOIN current_resident tenant ON tenant.owner_tenant_pair=1 JOIN residence tr ON tr.person_id=tenant.person_id AND tr.end_date IS NULL AND tr.property_unit_id=o.property_unit_id WHERE o.end_date IS NULL
+      UNION SELECT person_id FROM current_resident WHERE owner_tenant_pair=1
+    )
+    SELECT cr.person_id,p.full_name,aa.account_id,aa.username,
+      EXISTS(SELECT 1 FROM account_global_role agr JOIN app_role role ON role.role_id=agr.role_id WHERE agr.account_id=aa.account_id AND role.role_code='PERSON_USER') AS resident_account,
+      cr.residence_role,cr.occupancy_status,cr.owner_flag,cr.owner_tenant_pair
+    FROM current_resident cr JOIN person p ON p.person_id=cr.person_id LEFT JOIN app_account aa ON aa.person_id=cr.person_id LEFT JOIN paired_people pp ON pp.person_id=cr.person_id
+    WHERE p.status='ACTIVE'
+    ORDER BY CASE WHEN pp.person_id IS NOT NULL THEN 0 WHEN cr.owner_flag=1 THEN 1 WHEN cr.occupancy_status='TENANT_OCCUPIED' THEN 2 WHEN cr.residence_role='RESPONSIBLE' THEN 3 ELSE 4 END, cr.person_id
+    LIMIT #{limit}
+  </select>
+</mapper>

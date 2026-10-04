@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.notification.mapper.NotificationMapper">
+  <insert id="insertNotification" parameterType="com.smartproperty.platform.notification.dto.NotificationCreateCommand" useGeneratedKeys="true" keyProperty="notificationId">
+    INSERT INTO notification(sender_account_id,title,content,category,status,sent_at) VALUES(#{senderAccountId},#{title},#{content},#{category},'SENT',CURRENT_TIMESTAMP(3))
+  </insert>
+  <insert id="insertRecipients">
+    INSERT INTO notification_recipient(notification_id,person_id,recipient_role,delivery_status,payload_json) VALUES
+    <foreach collection="recipients" item="recipient" separator=",">(#{notificationId},#{recipient.personId},#{recipient.recipientRole},'PENDING',#{recipient.payloadJson})</foreach>
+  </insert>
+  <select id="selectRecipientPersonIds" resultType="java.lang.Long">
+    <choose>
+      <when test="targetType == 'COMMUNITY'">
+        SELECT DISTINCT r.person_id FROM residence r JOIN property_unit p ON p.property_unit_id=r.property_unit_id JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id JOIN building b ON b.building_id=bu.building_id WHERE b.community_id=#{targetId} AND r.end_date IS NULL
+      </when>
+      <when test="targetType == 'BUILDING'">
+        SELECT DISTINCT r.person_id FROM residence r JOIN property_unit p ON p.property_unit_id=r.property_unit_id JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id WHERE bu.building_id=#{targetId} AND r.end_date IS NULL
+      </when>
+      <when test="targetType == 'PROPERTY'">
+        SELECT DISTINCT person_id FROM residence WHERE property_unit_id=#{targetId} AND end_date IS NULL
+      </when>
+      <otherwise>
+        SELECT DISTINCT person_id FROM residence WHERE person_id=#{targetId} AND end_date IS NULL
+      </otherwise>
+    </choose>
+  </select>
+  <select id="countSent" resultType="long">SELECT COUNT(*) FROM notification WHERE sender_account_id=#{accountId}</select>
+  <select id="selectSentPage" resultType="com.smartproperty.platform.notification.vo.NotificationSentVO">
+    SELECT n.notification_id,n.title,n.category,n.status,n.sent_at,a.username AS sender_username,
+      COALESCE(SUM(nr.recipient_role='TO'),0) AS to_count,COALESCE(SUM(nr.recipient_role='CC'),0) AS cc_count,COUNT(nr.notification_recipient_id) AS recipient_count
+    FROM notification n JOIN app_account a ON a.account_id=n.sender_account_id LEFT JOIN notification_recipient nr ON nr.notification_id=n.notification_id
+    WHERE n.sender_account_id=#{accountId} GROUP BY n.notification_id,n.title,n.category,n.status,n.sent_at,a.username ORDER BY n.sent_at DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="selectSentDetailBase" resultType="com.smartproperty.platform.notification.vo.NotificationDetailBaseVO">
+    SELECT n.notification_id,n.title,n.content,n.category,n.status,n.sent_at,a.username AS sender_username
+    FROM notification n JOIN app_account a ON a.account_id=n.sender_account_id WHERE n.notification_id=#{notificationId} AND n.sender_account_id=#{accountId}
+  </select>
+  <select id="selectRecipients" resultType="com.smartproperty.platform.notification.vo.NotificationRecipientVO">
+    SELECT nr.person_id,p.full_name,nr.recipient_role FROM notification_recipient nr JOIN person p ON p.person_id=nr.person_id WHERE nr.notification_id=#{notificationId} ORDER BY FIELD(nr.recipient_role,'TO','CC'),p.full_name
+  </select>
+  <select id="searchTargetOptions" resultType="com.smartproperty.platform.notification.vo.NotificationTargetOptionVO">
+    SELECT candidate.target_type, candidate.target_id, candidate.community_id, candidate.label, candidate.description
+    FROM (
+      SELECT 'COMMUNITY' AS target_type, c.community_id AS target_id, c.community_id, NULL AS building_id, NULL AS property_unit_id,
+             c.community_name AS label, c.address_line AS description, c.community_name AS search_text, 1 AS type_order
+      FROM community c WHERE c.status='ACTIVE'
+      UNION ALL
+      SELECT 'BUILDING', b.building_id, b.community_id, b.building_id, NULL,
+             CONCAT(c.community_name, ' · ', b.building_no, '号楼'), CONCAT('楼栋 · ', COALESCE(b.building_name, b.building_no)),
+             CONCAT(c.community_name, ' ', b.building_no, '号楼 ', COALESCE(b.building_name, '')), 2
+      FROM building b JOIN community c ON c.community_id=b.community_id WHERE b.status='ACTIVE'
+      UNION ALL
+      SELECT 'PROPERTY', p.property_unit_id, b.community_id, b.building_id, p.property_unit_id,
+             CONCAT(c.community_name, ' · ', b.building_no, '号楼 · ', COALESCE(bu.unit_name, CONCAT(bu.unit_no, '单元')), ' · ', p.property_no),
+             CONCAT('房产 · ', p.property_no),
+             CONCAT(c.community_name, ' ', b.building_no, '号楼 ', COALESCE(bu.unit_name, CONCAT(bu.unit_no, '单元')), ' ', p.property_no), 3
+      FROM property_unit p JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id JOIN building b ON b.building_id=bu.building_id JOIN community c ON c.community_id=b.community_id WHERE p.status='ACTIVE'
+      UNION ALL
+      SELECT 'PERSON', per.person_id, b.community_id, b.building_id, p.property_unit_id,
+             per.full_name, CONCAT(c.community_name, ' · ', b.building_no, '号楼 · ', p.property_no),
+             CONCAT(per.full_name, ' ', c.community_name, ' ', b.building_no, '号楼 ', p.property_no), 4
+      FROM person per JOIN residence r ON r.person_id=per.person_id AND r.end_date IS NULL JOIN property_unit p ON p.property_unit_id=r.property_unit_id JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id JOIN building b ON b.building_id=bu.building_id JOIN community c ON c.community_id=b.community_id WHERE per.status='ACTIVE'
+    ) candidate
+    WHERE 1=1
+    <if test="!scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0"> AND candidate.community_id IN <foreach collection="scope.communityIds" item="id" open="(" close=")" separator=",">#{id}</foreach></when><otherwise> AND 1=0</otherwise></choose></if>
+    <if test="query.targetType != 'ALL'"> AND candidate.target_type=#{query.targetType}</if>
+    <choose>
+      <when test="query.parentType == 'COMMUNITY'"> AND candidate.community_id=#{query.parentId}</when>
+      <when test="query.parentType == 'BUILDING'"> AND candidate.building_id=#{query.parentId}</when>
+      <when test="query.parentType == 'PROPERTY'"> AND candidate.property_unit_id=#{query.parentId}</when>
+    </choose>
+    <if test="query.keyword != null and query.keyword != ''"> AND candidate.search_text LIKE CONCAT('%', #{query.keyword}, '%')</if>
+    ORDER BY
+    <choose><when test="query.keyword != null and query.keyword != ''">CASE WHEN candidate.search_text=#{query.keyword} THEN 0 WHEN candidate.search_text LIKE CONCAT(#{query.keyword}, '%') THEN 1 ELSE 2 END,</when></choose>
+    candidate.type_order, candidate.label, candidate.target_id
+    LIMIT #{query.limit}
+  </select>
+</mapper>

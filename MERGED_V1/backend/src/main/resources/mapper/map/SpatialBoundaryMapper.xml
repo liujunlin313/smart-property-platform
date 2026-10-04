@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.map.boundary.mapper.SpatialBoundaryMapper">
+  <select id="searchInternalObjects" resultType="com.smartproperty.platform.map.boundary.vo.SpatialSearchResultVO">
+    SELECT 'COMMUNITY' AS subject_type, c.community_id AS subject_id, c.community_id, c.community_name AS label, c.address_line AS subtitle, c.longitude, c.latitude,
+           EXISTS(SELECT 1 FROM spatial_boundary sb WHERE sb.subject_type='COMMUNITY' AND sb.subject_id=c.community_id AND sb.status='ACTIVE') AS boundary_ready
+    FROM community c WHERE c.status='ACTIVE' AND c.community_name LIKE CONCAT('%', #{keyword}, '%')
+    <if test="!scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND c.community_id IN <foreach collection="scope.communityIds" item="id" open="(" close=")" separator=",">#{id}</foreach></when><otherwise>AND 1=0</otherwise></choose></if>
+    UNION ALL
+    SELECT 'BUILDING', b.building_id, b.community_id, CONCAT(c.community_name, ' ', COALESCE(b.building_name, b.building_no)), CONCAT(c.community_name, ' ', b.building_no), b.longitude, b.latitude,
+           EXISTS(SELECT 1 FROM spatial_boundary sb WHERE sb.subject_type='BUILDING' AND sb.subject_id=b.building_id AND sb.status='ACTIVE')
+    FROM building b JOIN community c ON c.community_id=b.community_id
+    WHERE b.status='ACTIVE' AND c.status='ACTIVE' AND (b.building_no LIKE CONCAT('%', #{keyword}, '%') OR b.building_name LIKE CONCAT('%', #{keyword}, '%') OR CONCAT(c.community_name, ' ', b.building_no) LIKE CONCAT('%', #{keyword}, '%'))
+    <if test="!scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND b.community_id IN <foreach collection="scope.communityIds" item="id" open="(" close=")" separator=",">#{id}</foreach></when><otherwise>AND 1=0</otherwise></choose></if>
+    ORDER BY subject_type, label LIMIT 30
+  </select>
+  <select id="selectBoundary" resultType="com.smartproperty.platform.map.boundary.vo.SpatialBoundaryVO">
+    SELECT subject_type, subject_id, CAST(boundary_geojson AS CHAR) AS geo_json, coordinate_system, boundary_source AS source, status, version, verified_at FROM spatial_boundary
+    WHERE subject_type=#{subjectType} AND subject_id=#{subjectId} AND status='ACTIVE'
+  </select>
+  <insert id="upsertBoundary">
+    INSERT INTO spatial_boundary(subject_type, subject_id, boundary_geojson, coordinate_system, boundary_source, status, verified_at, created_by_account_id, version)
+    VALUES(#{subjectType}, #{subjectId}, CAST(#{geoJson} AS JSON), 'GCJ02', 'MANUAL', 'ACTIVE', CURRENT_TIMESTAMP(3), #{accountId}, 0)
+    ON DUPLICATE KEY UPDATE boundary_geojson=IF(version=#{expectedVersion}, VALUES(boundary_geojson), boundary_geojson), verified_at=IF(version=#{expectedVersion}, VALUES(verified_at), verified_at), created_by_account_id=IF(version=#{expectedVersion}, VALUES(created_by_account_id), created_by_account_id), version=IF(version=#{expectedVersion}, version+1, version)
+  </insert>
+</mapper>

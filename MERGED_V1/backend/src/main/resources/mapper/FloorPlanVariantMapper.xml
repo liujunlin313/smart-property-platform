@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.file.mapper.FloorPlanVariantMapper">
+    <select id="findVariantFloorPlanForProperty" resultType="com.smartproperty.platform.file.model.FileObjectRow">
+        SELECT fo.file_object_id, CAST(NULL AS UNSIGNED) AS property_unit_id, fo.bucket_name, fo.object_key,
+               fo.original_name, fo.content_type, fo.size_bytes, fo.sha256, fo.status
+        FROM property_unit p
+        JOIN layout_template_floor_plan_variant ltfpv
+          ON ltfpv.layout_template_id = p.layout_template_id
+         AND ltfpv.gross_area = p.gross_area
+         AND ltfpv.status = 'ACTIVE'
+        JOIN file_object fo ON fo.file_object_id = ltfpv.file_object_id AND fo.status = 'ACTIVE'
+        WHERE p.property_unit_id = #{propertyUnitId}
+    </select>
+
+    <select id="findVariantByLayoutAndGrossArea" resultType="com.smartproperty.platform.file.model.FileObjectRow">
+        SELECT fo.file_object_id, CAST(NULL AS UNSIGNED) AS property_unit_id, fo.bucket_name, fo.object_key,
+               fo.original_name, fo.content_type, fo.size_bytes, fo.sha256, fo.status
+        FROM layout_template_floor_plan_variant ltfpv
+        JOIN file_object fo ON fo.file_object_id = ltfpv.file_object_id AND fo.status = 'ACTIVE'
+        WHERE ltfpv.layout_template_id = #{layoutTemplateId}
+          AND ltfpv.gross_area = #{grossArea}
+          AND ltfpv.status = 'ACTIVE'
+    </select>
+
+    <insert id="insertVariant">
+        INSERT INTO layout_template_floor_plan_variant (layout_template_id, gross_area, file_object_id)
+        VALUES (#{layoutTemplateId}, #{grossArea}, #{fileObjectId})
+    </insert>
+</mapper>

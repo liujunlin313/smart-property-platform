@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.access.mapper.AccessControlMapper">
+    <select id="selectPermissionCodes" resultType="string">SELECT DISTINCT p.permission_code FROM account_global_role agr JOIN role_permission rp ON rp.role_id = agr.role_id JOIN app_permission p ON p.permission_id = rp.permission_id WHERE agr.account_id = #{accountId}</select>
+    <select id="selectActiveCommunityScopeIds" resultType="long">SELECT community_id FROM account_community_scope WHERE account_id = #{accountId} AND status = 'ACTIVE' ORDER BY community_id</select>
+    <select id="selectCommunityIdForProperty" resultType="long">SELECT b.community_id FROM property_unit pu JOIN building_unit bu ON bu.building_unit_id = pu.building_unit_id JOIN building b ON b.building_id = bu.building_id WHERE pu.property_unit_id = #{propertyUnitId}</select>
+    <select id="selectCommunityIdForBill" resultType="long">SELECT b.community_id FROM bill bi JOIN property_unit pu ON pu.property_unit_id = bi.property_unit_id JOIN building_unit bu ON bu.building_unit_id = pu.building_unit_id JOIN building b ON b.building_id = bu.building_id WHERE bi.bill_id = #{billId}</select>
+    <select id="selectCommunityIdForResidence" resultType="long">SELECT b.community_id FROM residence r JOIN property_unit pu ON pu.property_unit_id = r.property_unit_id JOIN building_unit bu ON bu.building_unit_id = pu.building_unit_id JOIN building b ON b.building_id = bu.building_id WHERE r.residence_id = #{residenceId}</select>
+    <select id="selectCommunityIdForBuilding" resultType="long">SELECT community_id FROM building WHERE building_id = #{buildingId}</select>
+    <select id="selectCommunityIdForPersonCurrentResidence" resultType="long">SELECT b.community_id FROM residence r JOIN property_unit pu ON pu.property_unit_id = r.property_unit_id JOIN building_unit bu ON bu.building_unit_id = pu.building_unit_id JOIN building b ON b.building_id = bu.building_id WHERE r.person_id = #{personId} AND r.end_date IS NULL ORDER BY r.start_date DESC LIMIT 1</select>
+    <select id="selectScopedCommunities" resultType="com.smartproperty.platform.access.vo.ScopedCommunityVO">
+        SELECT community_id,community_name
+        FROM community WHERE status='ACTIVE'
+        <if test="!global">
+            <choose>
+                <when test="communityIds != null and communityIds.size() > 0"> AND community_id IN
+                    <foreach collection="communityIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
+                </when><otherwise> AND 1=0</otherwise></choose></if> ORDER BY community_id</select>
+</mapper>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.map.mapper.MapSearchMapper">
+    <sql id="scope"><if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">
+        AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+    </when><otherwise>AND 1 = 0</otherwise></choose></if></sql>
+    <sql id="columns">c.community_id AS communityId, c.community_code AS communityCode,
+        c.community_name AS communityName, c.address_line AS address, c.longitude, c.latitude</sql>
+    <select id="findVisibleCommunity" resultType="com.smartproperty.platform.map.model.ManagedCommunityLocationRow">
+        SELECT <include refid="columns"/> FROM community c WHERE c.community_id=#{communityId} AND c.status='ACTIVE' <include refid="scope"/>
+    </select>
+    <select id="findVisibleCommunityLocations" resultType="com.smartproperty.platform.map.model.ManagedCommunityLocationRow">
+        SELECT <include refid="columns"/> FROM community c WHERE c.status='ACTIVE' AND c.longitude IS NOT NULL AND c.latitude IS NOT NULL <include refid="scope"/> ORDER BY c.community_id
+    </select>
+</mapper>

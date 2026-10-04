@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.asset.mapper.PropertyUnitMapper">
+    <sql id="joins">
+        FROM property_unit p
+        JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id
+        JOIN building b ON b.building_id=bu.building_id
+        JOIN community c ON c.community_id=b.community_id
+        LEFT JOIN layout_template lt ON lt.layout_template_id=p.layout_template_id
+        LEFT JOIN property_floor_plan pfp ON pfp.property_unit_id=p.property_unit_id
+        LEFT JOIN file_object fo ON fo.file_object_id=pfp.file_object_id AND fo.status='ACTIVE'
+        LEFT JOIN layout_template_floor_plan_variant ltfpv ON ltfpv.layout_template_id=p.layout_template_id
+            AND ltfpv.gross_area=p.gross_area AND ltfpv.status='ACTIVE'
+        LEFT JOIN file_object vfo ON vfo.file_object_id=ltfpv.file_object_id AND vfo.status='ACTIVE'
+        LEFT JOIN layout_template_floor_plan ltfp ON ltfp.layout_template_id=p.layout_template_id
+        LEFT JOIN file_object tfo ON tfo.file_object_id=ltfp.file_object_id AND tfo.status='ACTIVE'
+    </sql>
+    <sql id="filters">
+        <where>
+            <if test="communityId != null">c.community_id=#{communityId}</if>
+            <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+            <if test="buildingId != null">AND b.building_id=#{buildingId}</if>
+            <if test="buildingUnitId != null">AND bu.building_unit_id=#{buildingUnitId}</if>
+            <if test="layoutTemplateId != null">AND p.layout_template_id=#{layoutTemplateId}</if>
+            <if test="status != null and status != ''">AND p.status=#{status}</if>
+            <if test="occupancyStatus != null and occupancyStatus != ''">AND p.occupancy_status=#{occupancyStatus}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (p.property_no LIKE CONCAT('%',#{keyword},'%')
+                  OR c.community_name LIKE CONCAT('%',#{keyword},'%')
+                  OR b.building_no LIKE CONCAT('%',#{keyword},'%')
+                  OR COALESCE(b.building_name,'') LIKE CONCAT('%',#{keyword},'%')
+                  OR bu.unit_no LIKE CONCAT('%',#{keyword},'%')
+                  OR COALESCE(lt.layout_name,'') LIKE CONCAT('%',#{keyword},'%'))
+            </if>
+        </where>
+    </sql>
+    <sql id="columns">p.property_unit_id,p.building_unit_id,b.building_id,c.community_id,
+        p.layout_template_id,c.community_name,b.building_no,b.building_name,bu.unit_no,bu.unit_name,
+        p.property_no,p.floor_no,p.gross_area,p.usable_area,p.property_use,p.status,p.occupancy_status,
+        p.version,lt.layout_code,lt.layout_name,lt.layout_type,
+        COALESCE(fo.file_object_id,vfo.file_object_id,tfo.file_object_id) AS floor_plan_file_id,
+        COALESCE(fo.content_type,vfo.content_type,tfo.content_type) AS floor_plan_content_type,
+        CASE WHEN fo.file_object_id IS NOT NULL THEN 'PROPERTY'
+             WHEN vfo.file_object_id IS NOT NULL THEN 'VARIANT'
+             WHEN tfo.file_object_id IS NOT NULL THEN 'TEMPLATE'
+             ELSE NULL END AS floor_plan_source,
+        p.created_at,p.updated_at</sql>
+    <select id="findAll" resultType="com.smartproperty.platform.asset.dto.response.PropertyUnitResponse">
+        SELECT <include refid="columns"/> <include refid="joins"/> <include refid="filters"/>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'floorNo'">p.floor_no</when>
+            <when test="sortBy == 'grossArea'">p.gross_area</when>
+            <when test="sortBy == 'updatedAt'">p.updated_at</when>
+            <otherwise>p.created_at</otherwise>
+        </choose>
+        <choose><when test="sortDirection == 'asc'">ASC</when><otherwise>DESC</otherwise></choose>,
+        p.property_unit_id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="count" resultType="int">
+        SELECT COUNT(*) <include refid="joins"/> <include refid="filters"/>
+    </select>
+    <select id="findById" resultType="com.smartproperty.platform.asset.dto.response.PropertyUnitResponse">
+        SELECT <include refid="columns"/> <include refid="joins"/> WHERE p.property_unit_id=#{propertyUnitId}
+        <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise>AND 1 = 0</otherwise></choose></if>
+    </select>
+    <insert id="insert">
+        INSERT INTO property_unit (building_unit_id,layout_template_id,property_no,floor_no,gross_area,
+            usable_area,property_use,status,occupancy_status)
+        VALUES (#{entity.buildingUnitId},#{entity.layoutTemplateId},#{entity.propertyNo},#{entity.floorNo},
+            #{entity.grossArea},#{entity.usableArea},COALESCE(#{entity.propertyUse},'RESIDENTIAL'),
+            #{effectiveStatus},#{effectiveOccupancyStatus})
+    </insert>
+    <update id="update">
+        UPDATE property_unit SET layout_template_id=#{entity.layoutTemplateId},floor_no=#{entity.floorNo},
+            gross_area=#{entity.grossArea},usable_area=#{entity.usableArea},
+            property_use=COALESCE(#{entity.propertyUse},property_use),status=#{effectiveStatus},
+            occupancy_status=#{effectiveOccupancyStatus},version=version+1
+        WHERE property_unit_id=#{propertyUnitId} AND version=#{entity.version}
+    </update>
+    <select id="lastInsertId" resultType="long">SELECT LAST_INSERT_ID()</select>
+</mapper>

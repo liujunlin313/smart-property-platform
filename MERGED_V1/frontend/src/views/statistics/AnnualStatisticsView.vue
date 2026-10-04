@@ -1,0 +1,21 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import EChart from '../../components/EChart.vue'
+import { getAnnualStatistics, getMonthlyStatistics } from '../../api/statistics.js'
+import { apiMessage } from '../../api/http.js'
+
+const route = useRoute(), router = useRouter(), year = ref(Number(route.query.year) || 2026), loading = ref(false), data = ref({ quarterlyStatistics: [], feeComposition: [] }), monthly = ref([])
+const money = v => new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2 }).format(v || 0)
+const annualMonths = computed(() => Array.from({ length: 12 }, (_, index) => {
+  const actual = monthly.value.find(item => Number(item.month) === index + 1)
+  return actual || { month: index + 1, noData: true, receivableAmount: null, receivedAmount: null }
+}))
+const option = computed(() => ({ tooltip:{trigger:'axis',formatter(params){const point=params?.[0];if(!point||point.data==null)return `${point?.axisValue||''}：暂无账单数据`;return params.map(item=>`${item.marker}${item.seriesName}：¥ ${money(item.data)}`).join('<br/>')}},legend:{data:['应收','实收']},xAxis:{type:'category',data:annualMonths.value.map(x=>`${x.month}月`)},yAxis:{type:'value'},series:[{name:'应收',type:'bar',data:annualMonths.value.map(x=>x.receivableAmount),itemStyle:{color:'#6ab1a8'}},{name:'实收',type:'bar',data:annualMonths.value.map(x=>x.receivedAmount),itemStyle:{color:'#167d72'}}]}))
+async function load(){loading.value=true;try{[data.value,monthly.value]=await Promise.all([getAnnualStatistics(year.value),getMonthlyStatistics(year.value)])}catch(e){ElMessage.error(apiMessage(e,'年度统计加载失败'))}finally{loading.value=false}}
+function openMonth(row){router.push({name:'monthly-statistics',query:{year:year.value,month:row.month}})}
+onMounted(load)
+ </script>
+<template><section v-loading="loading"><div class="toolbar"><p class="muted">点击有真实账单数据的月份进入月度 → 小区 → 账单明细下钻；无数据月份保留为空，不等同于 0。</p><el-select v-model="year" style="width:110px" @change="load"><el-option :value="2026" label="2026 年"/></el-select></div><div class="kpis"><article v-for="[label,value] in [['年度应收',data.receivableAmount],['年度实收',data.receivedAmount],['年度欠费',data.outstandingAmount],['年度收缴率',`${Number(data.collectionRatePercent||0).toFixed(2)}%`]]" :key="label" class="panel"><span>{{label}}</span><b>{{typeof value==='string'?value:'¥ '+money(value)}}</b></article></div><section class="panel chart"><h2>{{year}} 年度收费趋势</h2><EChart :option="option" height="360px"/></section><section class="panel table"><h2>月度统计</h2><el-table :data="annualMonths" @row-click="row=>!row.noData&&openMonth(row)"><el-table-column label="月份"><template #default="{row}">{{row.month}} 月</template></el-table-column><el-table-column label="账单数"><template #default="{row}">{{row.noData?'暂无账单数据':row.billCount}}</template></el-table-column><el-table-column label="应收"><template #default="{row}">{{row.noData?'—':'¥ '+money(row.receivableAmount)}}</template></el-table-column><el-table-column label="实收"><template #default="{row}">{{row.noData?'—':'¥ '+money(row.receivedAmount)}}</template></el-table-column><el-table-column label="欠费"><template #default="{row}">{{row.noData?'—':'¥ '+money(row.outstandingAmount)}}</template></el-table-column><el-table-column label="下钻"><template #default="{row}"><el-button v-if="!row.noData" link type="primary" @click.stop="openMonth(row)">查看月度</el-button><span v-else class="muted">暂无数据</span></template></el-table-column></el-table></section><section class="panel table"><h2>费用构成</h2><el-table :data="data.feeComposition"><el-table-column prop="feeName" label="收费项目"/><el-table-column prop="feeCode" label="编码"/><el-table-column label="年度应收"><template #default="{row}">¥ {{money(row.receivableAmount)}}</template></el-table-column></el-table></section></section></template>
+<style scoped>.toolbar{display:flex;justify-content:space-between;margin-bottom:16px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:17px}.kpis article{padding:20px}.kpis span{display:block;color:#718692;font-size:12px}.kpis b{display:block;margin-top:10px;color:#14394a;font-size:22px}.chart,.table{padding:20px}.chart h2,.table h2{margin:0 0 14px;font-size:17px}.table{margin-top:17px}</style>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.auth.mapper.AuthMapper">
+    <select id="findAccountByUsername" resultType="com.smartproperty.platform.auth.model.AccountRow">
+        SELECT account_id, person_id, username, password_hash, status,
+               failed_login_attempts, locked_until, token_version, last_login_at
+        FROM app_account
+        WHERE username = #{username}
+    </select>
+
+    <select id="findAccountById" resultType="com.smartproperty.platform.auth.model.AccountRow">
+        SELECT account_id, person_id, username, password_hash, status,
+               failed_login_attempts, locked_until, token_version, last_login_at
+        FROM app_account
+        WHERE account_id = #{accountId}
+    </select>
+
+    <select id="findGlobalRoleCodes" resultType="string">
+        SELECT r.role_code
+        FROM account_global_role ar
+        JOIN app_role r ON r.role_id = ar.role_id
+        WHERE ar.account_id = #{accountId}
+        ORDER BY r.role_code
+    </select>
+
+    <select id="findRoleId" resultType="int">
+        SELECT role_id FROM app_role WHERE role_code = #{roleCode}
+    </select>
+
+    <insert id="insertAccount">
+        INSERT INTO app_account (username, password_hash, status)
+        VALUES (#{username}, #{passwordHash}, 'ACTIVE')
+    </insert>
+
+    <insert id="addGlobalRole">
+        INSERT IGNORE INTO account_global_role (account_id, role_id)
+        VALUES (#{accountId}, #{roleId})
+    </insert>
+
+    <update id="reconcileBootstrapAccount">
+        UPDATE app_account
+        SET password_hash = #{passwordHash}, status = 'ACTIVE',
+            failed_login_attempts = 0, locked_until = NULL,
+            token_version = token_version + 1
+        WHERE account_id = #{accountId}
+    </update>
+
+    <update id="recordLoginFailure">
+        UPDATE app_account
+        SET failed_login_attempts = #{attempts}, status = #{status}, locked_until = #{lockedUntil}
+        WHERE account_id = #{accountId}
+    </update>
+
+    <update id="recordLoginSuccess">
+        UPDATE app_account
+        SET failed_login_attempts = 0, locked_until = NULL, status = 'ACTIVE',
+            last_login_at = CURRENT_TIMESTAMP(3)
+        WHERE account_id = #{accountId}
+    </update>
+
+    <update id="clearExpiredLock">
+        UPDATE app_account
+        SET failed_login_attempts = 0, locked_until = NULL, status = 'ACTIVE'
+        WHERE account_id = #{accountId}
+          AND status = 'LOCKED'
+          AND locked_until IS NOT NULL
+          AND locked_until &lt;= CURRENT_TIMESTAMP(3)
+    </update>
+
+    <insert id="insertRefreshSession">
+        INSERT INTO refresh_token_session (account_id, token_hash, expires_at, user_agent)
+        VALUES (#{accountId}, #{tokenHash}, #{expiresAt}, #{userAgent})
+    </insert>
+
+    <select id="findRefreshSessionForUpdate" resultType="com.smartproperty.platform.auth.model.RefreshSessionRow">
+        SELECT refresh_token_session_id, account_id, token_hash, expires_at, revoked_at
+        FROM refresh_token_session
+        WHERE token_hash = #{tokenHash}
+        FOR UPDATE
+    </select>
+
+    <update id="rotateRefreshSession">
+        UPDATE refresh_token_session
+        SET revoked_at = #{usedAt}, replaced_by_hash = #{replacementHash}, last_used_at = #{usedAt}
+        WHERE refresh_token_session_id = #{sessionId} AND revoked_at IS NULL
+    </update>
+
+    <update id="revokeRefreshSession">
+        UPDATE refresh_token_session
+        SET revoked_at = #{revokedAt}
+        WHERE token_hash = #{tokenHash} AND revoked_at IS NULL
+    </update>
+
+    <update id="revokeAllRefreshSessions">
+        UPDATE refresh_token_session
+        SET revoked_at = #{revokedAt}
+        WHERE account_id = #{accountId} AND revoked_at IS NULL
+    </update>
+</mapper>

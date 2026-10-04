@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="LOG_ROOT" source="APP_LOG_ROOT" defaultValue="${user.dir}/logs"/>
+    <property name="CONSOLE_PATTERN" value="%d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{32}) request_id=%X{requestId:--} deployment=%X{deploymentId:--} instance=%X{instanceId:--} - %msg%n"/>
+    <property name="FILE_PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{64} request_id=%X{requestId:--} deployment_id=%X{deploymentId:--} instance_id=%X{instanceId:--} - %msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder charset="UTF-8"><pattern>${CONSOLE_PATTERN}</pattern></encoder>
+    </appender>
+
+    <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ROOT}/backend/application/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROOT}/backend/application/application-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>90</maxHistory><cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder charset="UTF-8"><pattern>${FILE_PATTERN}</pattern></encoder>
+    </appender>
+    <appender name="HTTP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ROOT}/backend/http/http.jsonl</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROOT}/backend/http/http-%d{yyyy-MM-dd}.jsonl</fileNamePattern>
+            <maxHistory>90</maxHistory><cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder charset="UTF-8"><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <appender name="TRACE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ROOT}/backend/trace/trace.jsonl</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROOT}/backend/trace/trace-%d{yyyy-MM-dd}.jsonl</fileNamePattern>
+            <maxHistory>90</maxHistory><cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder charset="UTF-8"><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <appender name="DATABASE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ROOT}/database/operations.jsonl</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROOT}/database/operations-%d{yyyy-MM-dd}.jsonl</fileNamePattern>
+            <maxHistory>90</maxHistory><cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder charset="UTF-8"><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ROOT}/audit/audit.jsonl</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROOT}/audit/audit-%d{yyyy-MM-dd}.jsonl</fileNamePattern>
+            <maxHistory>90</maxHistory><cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder charset="UTF-8"><pattern>%msg%n</pattern></encoder>
+    </appender>
+    <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ROOT}/security/security.jsonl</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROOT}/security/security-%d{yyyy-MM-dd}.jsonl</fileNamePattern>
+            <maxHistory>90</maxHistory><cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder charset="UTF-8"><pattern>%msg%n</pattern></encoder>
+    </appender>
+
+    <logger name="HTTP_CONSOLE" level="INFO" additivity="false"><appender-ref ref="CONSOLE"/></logger>
+    <logger name="HTTP_ACCESS" level="INFO" additivity="false"><appender-ref ref="HTTP_FILE"/></logger>
+    <logger name="HTTP_JSON" level="INFO" additivity="false"><appender-ref ref="HTTP_FILE"/></logger>
+    <logger name="FLOW_TRACE" level="INFO" additivity="false"><appender-ref ref="TRACE_FILE"/></logger>
+    <logger name="DATABASE_JSON" level="INFO" additivity="false"><appender-ref ref="DATABASE_FILE"/></logger>
+    <logger name="AUDIT_JSON" level="INFO" additivity="false"><appender-ref ref="AUDIT_FILE"/></logger>
+    <logger name="SECURITY_JSON" level="INFO" additivity="false"><appender-ref ref="SECURITY_FILE"/></logger>
+    <logger name="FRONTEND_CLIENT" level="INFO" additivity="false"><appender-ref ref="APPLICATION_FILE"/></logger>
+
+    <logger name="org.mybatis" level="WARN"/>
+    <logger name="org.springframework.data.repository.config.RepositoryConfigurationDelegate" level="WARN"/>
+    <logger name="io.lettuce.core.protocol.ConnectionWatchdog" level="ERROR"/>
+    <root level="INFO"><appender-ref ref="CONSOLE"/><appender-ref ref="APPLICATION_FILE"/></root>
+</configuration>

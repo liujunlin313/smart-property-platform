@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "dockerComposeProject": "smart_property_public_demo",
+  "logRoot": "logs",
+  "retentionDays": 90,
+  "metricsIntervalSeconds": 60,
+  "dockerReadyRetrySeconds": 10,
+  "dockerReadySlowRetrySeconds": 60,
+  "dockerReadySlowAfterMinutes": 15,
+  "securityAlertWindowMinutes": 5,
+  "securityAlertThreshold": 4,
+  "suspiciousPathPatterns": ["/.env", "/.git", "/wp-admin", "/phpmyadmin", "/actuator/env"]
+}

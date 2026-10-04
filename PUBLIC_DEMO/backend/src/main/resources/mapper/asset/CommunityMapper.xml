@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartproperty.platform.asset.mapper.CommunityMapper">
+    <select id="findAll" resultType="com.smartproperty.platform.asset.dto.response.CommunityResponse">
+        SELECT c.community_id, c.community_code, c.community_name, c.address_line,
+               c.longitude, c.latitude, c.location_source, c.coordinate_system,
+               c.amap_poi_id, c.location_verified_at, c.completion_year,
+               c.status, c.version, c.created_at, c.updated_at,
+               (SELECT COUNT(*) FROM building b WHERE b.community_id = c.community_id) AS building_count,
+               (SELECT COUNT(*) FROM property_unit p
+                  JOIN building_unit bu ON bu.building_unit_id = p.building_unit_id
+                  JOIN building b ON b.building_id = bu.building_id
+                 WHERE b.community_id = c.community_id) AS property_count
+        FROM community c
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (c.community_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR c.community_code LIKE CONCAT('%', #{keyword}, '%')
+                 OR c.address_line LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null and status != ''">AND c.status = #{status}</if>
+            <if test="scope != null and !scope.global">
+                <choose><when test="scope.communityIds != null and scope.communityIds.size() > 0">
+                    AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                </when><otherwise>AND 1 = 0</otherwise></choose>
+            </if>
+        </where>
+        ORDER BY c.community_name, c.community_id
+    </select>
+    <select id="findById" resultType="com.smartproperty.platform.asset.dto.response.CommunityResponse">
+        SELECT c.community_id, c.community_code, c.community_name, c.address_line,
+               c.longitude, c.latitude, c.location_source, c.coordinate_system,
+               c.amap_poi_id, c.location_verified_at, c.completion_year,
+               c.status, c.version, c.created_at, c.updated_at,
+               (SELECT COUNT(*) FROM building b WHERE b.community_id = c.community_id) AS building_count,
+               (SELECT COUNT(*) FROM property_unit p JOIN building_unit bu ON bu.building_unit_id=p.building_unit_id
+                JOIN building b ON b.building_id=bu.building_id WHERE b.community_id=c.community_id) AS property_count
+        FROM community c WHERE c.community_id = #{communityId}
+        <if test="scope != null and !scope.global"><choose><when test="scope.communityIds != null and scope.communityIds.size() > 0"> AND c.community_id IN <foreach collection="scope.communityIds" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach></when><otherwise> AND 1 = 0</otherwise></choose></if>
+    </select>
+    <insert id="insert">
+        INSERT INTO community (community_code, community_name, address_line, longitude, latitude, completion_year, status)
+        VALUES (#{entity.communityCode}, #{entity.communityName}, #{entity.addressLine}, #{entity.longitude},
+                #{entity.latitude}, #{entity.completionYear}, COALESCE(#{entity.status}, 'ACTIVE'))
+    </insert>
+    <update id="update">
+        UPDATE community SET community_name=#{entity.communityName}, address_line=#{entity.addressLine},
+            longitude=#{entity.longitude}, latitude=#{entity.latitude}, completion_year=#{entity.completionYear},
+            status=COALESCE(#{entity.status},status), version=version+1
+        WHERE community_id=#{communityId} AND version=#{entity.version}
+    </update>
+    <select id="lastInsertId" resultType="long">SELECT LAST_INSERT_ID()</select>
+</mapper>
